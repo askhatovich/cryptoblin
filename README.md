@@ -30,8 +30,9 @@ handling of large file attachments.
   expire fast.
 - Decoy responses: opening a non-existent paste id returns the same shape as a
   real one, so id existence is not probeable.
-- Single-file C++ server (Crow + SQLite + libsodium-on-the-client) with the
-  full SPA bundled into the binary at compile time.
+- Single-file C++ server (Crow for HTTP, SQLite for metadata; libsodium
+  runs on the client side only) with the full SPA bundled into the binary
+  at compile time.
 - Cross-platform CLI (`blin`) for Linux and Windows, statically linkable.
 
 ---
@@ -162,9 +163,10 @@ All endpoints are JSON unless noted. Errors are
 ### Delete flow
 
 `DELETE /api/pastes/{id}` with `X-Delete-Token: <b64>`. The server stores
-SHA-256(token); a constant-time compare and `DELETE` happen inside a single
-DB call. Missing token, wrong token, missing id all collapse to
-`403 bad_token` with no distinguishable timing.
+SHA-256(token); the DB layer reads the stored hash, compares it against
+the submitted one in constant time, and only on a match issues the row
+`DELETE`. Missing token, wrong token, and missing id all collapse to the
+same `403 bad_token` response with no distinguishable timing.
 
 ---
 
@@ -183,10 +185,11 @@ not magic; the limits below matter.
 - **TLS terminator / reverse proxy.** Same — the encryption key never appears
   in any HTTP payload. It lives only in the URL fragment, which browsers
   never transmit.
-- **Network passive attacker.** Cipher is XChaCha20-Poly1305; passwords go
-  through Argon2id with `OPSLIMIT_INTERACTIVE` / `MEMLIMIT_INTERACTIVE`.
-  Without HTTPS the attacker still cannot read content; with HTTPS they also
-  cannot see ids or sizes.
+- **Network passive attacker.** Cipher is XChaCha20-Poly1305; the key is
+  derived from the seed (plus an optional password) via Argon2id with
+  `OPSLIMIT_INTERACTIVE` / `MEMLIMIT_INTERACTIVE`. Without HTTPS the
+  attacker still cannot read content; with HTTPS they also cannot see ids
+  or sizes.
 - **Server-side ciphertext tampering.** AEAD authenticates the envelope. The
   burn flag specifically is committed inside the AEAD plaintext, so the
   server cannot silently flip burn=false → burn=true (or vice versa) on
@@ -207,7 +210,8 @@ not magic; the limits below matter.
 
 - **Compromised endpoint.** A keylogger, malicious browser extension, or
   modified `blin` binary on either side defeats the model trivially. Verify
-  releases (signed tarballs, reproducible-ish builds via the GitHub CI).
+  release artifacts against the SHA-256 digests GitHub publishes on the
+  release page.
 - **Active in-flight attacker without HTTPS.** A MITM that can rewrite the
   served HTML can substitute a bundle that exfiltrates the URL fragment.
   Use HTTPS in production.
@@ -252,7 +256,8 @@ cmake --build build -j
 
 ### Windows CLI
 
-The CI builds a static-ish `blin.exe` via vcpkg. Local reproduction:
+CI builds `blin.exe` via vcpkg with libsodium and mbedTLS linked
+statically; the CRT remains dynamic. Local reproduction:
 
 ```pwsh
 vcpkg install libsodium:x64-windows-static-md mbedtls:x64-windows-static-md
