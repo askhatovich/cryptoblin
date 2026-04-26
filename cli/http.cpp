@@ -14,6 +14,11 @@
 #include <stdexcept>
 #include <string>
 
+#ifdef _WIN32
+#  include <windows.h>
+#  include <wincrypt.h>
+#endif
+
 namespace blin {
 
 namespace {
@@ -34,6 +39,46 @@ std::string trim(std::string s) {
         s.pop_back();
     }
     return s;
+}
+
+// Populate `chain` with the host system's trusted CA roots. Returns true if
+// at least one certificate was loaded. On Windows the certificates come from
+// the "ROOT" certificate store; on POSIX we fall through a list of common
+// CA-bundle paths.
+bool loadSystemCAs(mbedtls_x509_crt* chain) {
+#ifdef _WIN32
+    HCERTSTORE store = CertOpenSystemStoreA(0, "ROOT");
+    if (!store) {
+        return false;
+    }
+    bool any = false;
+    PCCERT_CONTEXT cert = nullptr;
+    while ((cert = CertEnumCertificatesInStore(store, cert)) != nullptr) {
+        if (mbedtls_x509_crt_parse_der(chain, cert->pbCertEncoded,
+                                        cert->cbCertEncoded) == 0) {
+            any = true;
+        }
+    }
+    CertCloseStore(store, 0);
+    return any;
+#else
+    const std::array<const char*, 5> caPaths{
+        "/etc/ssl/certs/ca-certificates.crt",
+        "/etc/pki/tls/certs/ca-bundle.crt",
+        "/etc/ssl/cert.pem",
+        "/etc/ssl/ca-bundle.pem",
+        "/etc/ssl/certs",
+    };
+    for (auto* p : caPaths) {
+        if (mbedtls_x509_crt_parse_file(chain, p) >= 0) {
+            return true;
+        }
+        if (mbedtls_x509_crt_parse_path(chain, p) >= 0) {
+            return true;
+        }
+    }
+    return false;
+#endif
 }
 
 // Plain TCP transport. Uses mbedtls_net_* — a thin wrapper over Berkeley
@@ -92,27 +137,7 @@ public:
             throw std::runtime_error("ctr_drbg_seed failed");
         }
 
-        // Load system CA bundle. Try a few common paths.
-        const std::array<const char*, 5> caPaths{
-            "/etc/ssl/certs/ca-certificates.crt",
-            "/etc/pki/tls/certs/ca-bundle.crt",
-            "/etc/ssl/cert.pem",
-            "/etc/ssl/ca-bundle.pem",
-            "/etc/ssl/certs",
-        };
-        bool loaded = false;
-        for (auto* p : caPaths) {
-            // Try as file first, then as directory.
-            if (mbedtls_x509_crt_parse_file(&cacert_, p) >= 0) {
-                loaded = true;
-                break;
-            }
-            if (mbedtls_x509_crt_parse_path(&cacert_, p) >= 0) {
-                loaded = true;
-                break;
-            }
-        }
-        if (!loaded) {
+        if (!loadSystemCAs(&cacert_)) {
             throw std::runtime_error("could not load system CA bundle");
         }
 

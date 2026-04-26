@@ -53,7 +53,10 @@ target_link_libraries(blin PRIVATE
 )
 
 if(WIN32)
-    target_link_libraries(blin PRIVATE ws2_32)
+    # ws2_32 — sockets via mbedtls_net_*; crypt32 — Windows cert store
+    # (CertOpenSystemStore/CertEnumCertificatesInStore) used as the source
+    # of trusted CA roots for HTTPS verification.
+    target_link_libraries(blin PRIVATE ws2_32 crypt32)
 else()
     target_link_libraries(blin PRIVATE pthread)
 endif()
