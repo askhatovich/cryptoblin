@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.16)
 
+# Produce a fully static `blin` binary. Intended for musl-based builds
+# (Alpine + libsodium-static + mbedtls-static) so the artifact runs on any
+# Linux distribution without library version skew.
+option(BLIN_STATIC "Statically link the blin binary" OFF)
+
 # --- libsodium: prefer vcpkg's CMake config, fall back to pkg-config (Linux). --
 find_package(unofficial-sodium CONFIG QUIET)
 if(unofficial-sodium_FOUND)
@@ -51,6 +56,11 @@ if(WIN32)
     target_link_libraries(blin PRIVATE ws2_32)
 else()
     target_link_libraries(blin PRIVATE pthread)
+endif()
+
+if(BLIN_STATIC)
+    target_link_options(blin PRIVATE -static)
+    set_target_properties(blin PROPERTIES LINK_SEARCH_START_STATIC ON)
 endif()
 
 include(GNUInstallDirs)

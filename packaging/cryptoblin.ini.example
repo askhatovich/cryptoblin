@@ -1,0 +1,26 @@
+; CryptoBlin server configuration. Copy to /etc/cryptoblin/cryptoblin.ini
+; and edit. The systemd unit reads /etc/cryptoblin/cryptoblin.ini by default.
+
+[server]
+log_level    = info
+bind_address = 127.0.0.1
+bind_port    = 8080
+app_name     = CryptoBlin
+; title      =                 ; optional override for the page <title>
+
+[storage]
+db_path  = /var/lib/cryptoblin/cryptoblin.sqlite
+blob_dir = /var/lib/cryptoblin/blobs
+
+[retention]
+max_paste_bytes = 104857600    ; 100 MiB
+min_ttl_seconds = 3600         ; 1 hour
+max_ttl_seconds = 2592000      ; 30 days
+
+[limits]
+rate_limit_per_ip_seconds = 3
+total_pastes_cap          = 0  ; 0 = unlimited
+
+[captcha]
+difficulty_bits = 18
+ttl_seconds     = 300

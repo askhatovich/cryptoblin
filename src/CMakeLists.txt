@@ -1,22 +1,7 @@
 cmake_minimum_required(VERSION 3.16)
 
-if(DEFINED ENV{APP_VERSION})
-    set(APP_VERSION "$ENV{APP_VERSION}")
-else()
-    execute_process(
-        COMMAND git describe --tags --dirty
-        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-        OUTPUT_VARIABLE GIT_DESCRIBE
-        OUTPUT_STRIP_TRAILING_WHITESPACE
-        ERROR_QUIET
-    )
-    if(GIT_DESCRIBE)
-        string(REGEX REPLACE "^v" "" APP_VERSION "${GIT_DESCRIBE}")
-    else()
-        set(APP_VERSION "dev")
-    endif()
-endif()
-
+# APP_VERSION is computed in the root CMakeLists. We just resolve a short
+# git hash here for embedding into the version banner.
 execute_process(
     COMMAND git rev-parse --short HEAD
     WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
@@ -27,7 +12,6 @@ execute_process(
 if(NOT GIT_SHORT_HASH)
     set(GIT_SHORT_HASH "unknown")
 endif()
-message(STATUS "cryptoblin version: ${APP_VERSION} (${GIT_SHORT_HASH})")
 
 configure_file(
     ${CMAKE_CURRENT_SOURCE_DIR}/version.h.in

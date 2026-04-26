@@ -9,8 +9,7 @@ on:
 
 jobs:
   # ----------------------------------------------------------------------------
-  # Plain build + tests on every push and PR. Uses Debian 13 so the system
-  # libsodium / mbedtls / sqlite3 are all in apt.
+  # Plain build + tests on every push and PR.
   # ----------------------------------------------------------------------------
   build-test:
     name: build & test (debian 13)
@@ -31,24 +30,21 @@ jobs:
           npm ci
           npm run build
           bash embed.sh
-      - name: configure
-        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
-      - name: build
-        run: cmake --build build -j
-      - name: ctest
-        run: ctest --test-dir build --output-on-failure
-      - name: e2e tests
-        working-directory: web
+      - run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+      - run: cmake --build build -j
+      - run: ctest --test-dir build --output-on-failure
+      - working-directory: web
         run: node --test tests/
 
   # ----------------------------------------------------------------------------
-  # Release artifacts: server + CLI for Debian 12 and Debian 13. Only runs on
-  # tag pushes (v*). Built inside the matching distro container so the binary
-  # links against the distro's libc / libsodium / mbedtls. Tarballs include
-  # both the daemon and the CLI.
+  # Server .deb packages (one per Debian release). Built via cpack -G DEB
+  # inside the matching distro container so dependency soname pinning matches
+  # the distro's libsodium / libmbedtls / libsqlite3 of that release.
+  # CLI is excluded from the .deb (BUILD_CLI=OFF) — distributed separately as
+  # a musl-static binary by `release-linux-cli`.
   # ----------------------------------------------------------------------------
-  release-linux:
-    name: release linux (debian ${{ matrix.debian }})
+  release-linux-deb:
+    name: release server .deb (debian ${{ matrix.debian }})
     if: startsWith(github.ref, 'refs/tags/v')
     needs: build-test
     runs-on: ubuntu-latest
@@ -57,48 +53,98 @@ jobs:
       fail-fast: false
       matrix:
         debian: ["12", "13"]
+    env:
+      APP_VERSION: ${{ github.ref_name }}
     steps:
       - name: install deps
         run: |
           apt-get update
           apt-get install -y --no-install-recommends \
-            build-essential cmake pkg-config git ca-certificates \
+            build-essential cmake pkg-config git ca-certificates dpkg-dev \
             libsqlite3-dev libsodium-dev libmbedtls-dev libasio-dev \
             nodejs npm python3
       - uses: actions/checkout@v4
       - name: build web bundle
         working-directory: web
+        env:
+          APP_VERSION: ${{ github.ref_name }}
         run: |
           npm ci
           npm run build
           bash embed.sh
+      - name: configure & build (server only)
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release \
+                -DBUILD_SERVER=ON -DBUILD_CLI=OFF
+          cmake --build build -j
+      - name: cpack -> .deb
+        working-directory: build
+        run: |
+          cpack -G DEB
+          ls -la *.deb
+          # Tag the file with the distro release for clarity in the GH release.
+          for f in *.deb; do
+            mv "$f" "${f%.deb}-debian${{ matrix.debian }}.deb"
+          done
+          for f in *-debian${{ matrix.debian }}.deb; do
+            sha256sum "$f" > "$f.sha256"
+          done
+          ls -la *.deb*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: server-deb-debian${{ matrix.debian }}
+          path: build/*-debian${{ matrix.debian }}.deb*
+
+  # ----------------------------------------------------------------------------
+  # Standalone musl-static `blin` for Linux. Built in Alpine so the result is
+  # a single self-contained binary that runs on any glibc/musl distro.
+  # ----------------------------------------------------------------------------
+  release-linux-cli:
+    name: release blin (linux musl static)
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build-test
+    runs-on: ubuntu-latest
+    container: alpine:latest
+    env:
+      APP_VERSION: ${{ github.ref_name }}
+    steps:
+      - name: install deps
+        run: |
+          apk add --no-cache \
+            build-base cmake pkgconfig git linux-headers \
+            libsodium-dev libsodium-static \
+            mbedtls-dev mbedtls-static
+      - uses: actions/checkout@v4
       - name: configure & build
         run: |
-          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake -B build -DCMAKE_BUILD_TYPE=Release \
+                -DBUILD_SERVER=OFF -DBUILD_CLI=ON -DBLIN_STATIC=ON
           cmake --build build -j
+          file build/cli/blin || true
+          ldd  build/cli/blin || true
       - name: stage release
         run: |
-          STAGE="cryptoblin-${GITHUB_REF_NAME}-debian${{ matrix.debian }}-x86_64"
+          STAGE="blin-${GITHUB_REF_NAME}-linux-x86_64-static"
           mkdir -p "$STAGE"
-          cp build/src/cryptoblin "$STAGE/"
-          cp build/cli/blin       "$STAGE/"
-          cp LICENSE README.md    "$STAGE/" 2>/dev/null || true
+          cp build/cli/blin "$STAGE/"
+          cp LICENSE README.md README_ru.md "$STAGE/" 2>/dev/null || true
           tar czf "${STAGE}.tar.gz" "$STAGE"
           sha256sum "${STAGE}.tar.gz" > "${STAGE}.tar.gz.sha256"
       - uses: actions/upload-artifact@v4
         with:
-          name: cryptoblin-debian${{ matrix.debian }}
-          path: cryptoblin-*-debian${{ matrix.debian }}-*.tar.gz*
+          name: blin-linux-static
+          path: blin-*-linux-x86_64-static.tar.gz*
 
   # ----------------------------------------------------------------------------
-  # Windows CLI build via vcpkg. Server is not built on Windows (the daemon
-  # needs sqlite/crow tuned for POSIX); only the `blin.exe` client.
+  # Windows CLI build via vcpkg. Server is not built on Windows — only blin.exe.
   # ----------------------------------------------------------------------------
   release-windows:
-    name: release windows (cli)
+    name: release blin (windows)
     if: startsWith(github.ref, 'refs/tags/v')
     needs: build-test
     runs-on: windows-latest
+    env:
+      APP_VERSION: ${{ github.ref_name }}
     steps:
       - uses: actions/checkout@v4
       - name: vcpkg deps
@@ -119,8 +165,9 @@ jobs:
           $stage = "blin-$($env:GITHUB_REF_NAME)-windows-x86_64"
           New-Item -ItemType Directory -Path $stage | Out-Null
           Copy-Item build\cli\Release\blin.exe -Destination $stage\
-          if (Test-Path LICENSE)   { Copy-Item LICENSE $stage\ }
-          if (Test-Path README.md) { Copy-Item README.md $stage\ }
+          if (Test-Path LICENSE)      { Copy-Item LICENSE      $stage\ }
+          if (Test-Path README.md)    { Copy-Item README.md    $stage\ }
+          if (Test-Path README_ru.md) { Copy-Item README_ru.md $stage\ }
           Compress-Archive -Path $stage -DestinationPath "$stage.zip"
           (Get-FileHash "$stage.zip" -Algorithm SHA256).Hash | Out-File "$stage.zip.sha256"
         shell: pwsh
@@ -130,13 +177,12 @@ jobs:
           path: blin-*-windows-*.zip*
 
   # ----------------------------------------------------------------------------
-  # On a tag push, gather all release artifacts and attach them to the GitHub
-  # release. Created/updated by softprops/action-gh-release.
+  # Gather all artifacts and attach them to the GitHub Release for the tag.
   # ----------------------------------------------------------------------------
   publish-release:
     name: publish github release
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: [release-linux, release-windows]
+    needs: [release-linux-deb, release-linux-cli, release-windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -147,7 +193,8 @@ jobs:
       - name: flatten
         run: |
           mkdir -p out
-          find dist -type f \( -name '*.tar.gz' -o -name '*.zip' -o -name '*.sha256' \) \
+          find dist -type f \
+              \( -name '*.deb' -o -name '*.tar.gz' -o -name '*.zip' -o -name '*.sha256' \) \
               -exec cp {} out/ \;
           ls -la out
       - uses: softprops/action-gh-release@v2

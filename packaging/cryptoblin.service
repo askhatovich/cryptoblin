@@ -1,0 +1,34 @@
+[Unit]
+Description=CryptoBlin — self-hosted zero-knowledge note sharing
+Documentation=https://github.com/askhatovich/cryptoblin
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/cryptoblin --config /etc/cryptoblin/cryptoblin.ini
+Restart=on-failure
+RestartSec=5
+
+# Run as a transient system user with private state at /var/lib/cryptoblin.
+DynamicUser=yes
+StateDirectory=cryptoblin
+LogsDirectory=cryptoblin
+
+# Hardening
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictAddressFamilies=AF_INET AF_INET6
+RestrictNamespaces=yes
+LockPersonality=yes
+MemoryDenyWriteExecute=yes
+SystemCallArchitectures=native
+
+[Install]
+WantedBy=multi-user.target
