@@ -354,9 +354,8 @@ int cmdSend(int argc, char** argv) {
     // stdout when both streams are merged in a terminal.
     std::cerr << "\n";
     // The share URL is the data product of `send` — print it on stdout so a
-    // shell pipe can capture exactly that one line. The trailing blank line
-    // gives the terminal user a clean break after the payload.
-    std::cout << shareUrl << "\n\n";
+    // shell pipe can capture exactly that one line.
+    std::cout << shareUrl << "\n";
     return 0;
 }
 
