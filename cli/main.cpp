@@ -17,8 +17,17 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
-#include <unistd.h>
 #include <vector>
+
+#ifdef _WIN32
+#  include <io.h>
+#  define BLIN_ISATTY _isatty
+#  define BLIN_FILENO _fileno
+#else
+#  include <unistd.h>
+#  define BLIN_ISATTY isatty
+#  define BLIN_FILENO fileno
+#endif
 
 namespace {
 
@@ -102,7 +111,7 @@ void field(const std::string& key, const std::string& value) {
 
 blin::Bytes readAllStdin() {
     blin::Bytes out;
-    if (isatty(fileno(stdin))) {
+    if (BLIN_ISATTY(BLIN_FILENO(stdin))) {
         return out;  // no piped input
     }
     std::array<char, 8192> buf{};
