@@ -60,7 +60,8 @@ jobs:
         run: |
           apt-get update
           apt-get install -y --no-install-recommends \
-            build-essential cmake pkg-config git ca-certificates dpkg-dev \
+            build-essential cmake pkg-config git ca-certificates \
+            dpkg-dev file \
             libsqlite3-dev libsodium-dev libmbedtls-dev libasio-dev \
             nodejs npm python3
       - uses: actions/checkout@v4
