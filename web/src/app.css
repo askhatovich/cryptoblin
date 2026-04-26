@@ -1,0 +1,475 @@
+/* cryptoblin — global styles. Dark default; .light overrides on documentElement. */
+
+:root {
+    --bg:           #0f1117;
+    --bg-elev:      #161a23;
+    --bg-elev-2:    #1d2230;
+    --border:       #262c3b;
+    --text:         #e7e9ee;
+    --text-dim:     #9aa1b1;
+    --accent:       #7f8cff;          /* PrivateBin-adjacent indigo */
+    --accent-press: #6573ee;
+    --accent-fg:    #0a0e22;
+    --accent-soft:  rgba(127, 140, 255, 0.13);   /* tinted backgrounds */
+    --accent-line:  rgba(127, 140, 255, 0.32);   /* hairline borders */
+    --danger:       #ef6671;
+    --danger-press: #d24c57;
+    --shadow:       0 4px 24px rgba(0, 0, 0, 0.35);
+    --radius:       10px;
+    --mono:         ui-monospace, 'SFMono-Regular', 'JetBrains Mono', 'Menlo', monospace;
+    --sans:         -apple-system, 'Segoe UI', Inter, Roboto, system-ui, sans-serif;
+}
+
+:root.light {
+    --bg:           #f7f8fb;
+    --bg-elev:      #ffffff;
+    --bg-elev-2:    #eef0f5;
+    --border:       #dde1ea;
+    --text:         #14161c;
+    --text-dim:     #5a6172;
+    --accent:       #4757e0;
+    --accent-press: #3543c8;
+    --accent-fg:    #ffffff;
+    --accent-soft:  rgba(71, 87, 224, 0.10);
+    --accent-line:  rgba(71, 87, 224, 0.28);
+    --danger:       #c8404a;
+    --danger-press: #a4313a;
+    --shadow:       0 4px 24px rgba(20, 22, 28, 0.08);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+    margin: 0; padding: 0;
+    min-height: 100%;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+input, textarea, select, button {
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
+}
+
+input, textarea, select {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    width: 100%;
+    color: var(--text);
+    transition: border-color 0.12s ease;
+}
+input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+textarea {
+    min-height: 220px;
+    resize: vertical;
+    font-family: var(--mono);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+button {
+    background: var(--accent);
+    color: var(--accent-fg);
+    border: 0;
+    border-radius: var(--radius);
+    padding: 10px 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.12s ease, opacity 0.12s ease;
+}
+button:hover { background: var(--accent-press); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+button.ghost {
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+}
+button.ghost:hover {
+    background: var(--accent-soft);
+    border-color: var(--accent-line);
+    color: var(--accent);
+}
+button.danger { background: var(--danger); color: #fff; }
+button.danger:hover { background: var(--danger-press); }
+
+.mono { font-family: var(--mono); }
+.dim  { color: var(--text-dim); }
+
+.app-shell {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 24px 16px 32px;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+}
+
+header.brand {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+    gap: 12px;
+}
+header.brand h1 {
+    margin: 0;
+    font-size: 22px;
+    letter-spacing: -0.01em;
+    color: var(--accent);
+}
+header.brand .brand-link {
+    color: inherit;
+    text-decoration: none;
+    padding: 2px 8px;
+    margin: -2px -8px;
+    border-radius: 6px;
+    transition: background 0.12s ease, color 0.12s ease;
+}
+header.brand .brand-link:hover {
+    background: var(--accent-soft);
+    color: var(--accent-press);
+}
+header.brand .nav {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--text-dim);
+    font-size: 13px;
+}
+header.brand .nav a { color: inherit; text-decoration: none; }
+header.brand .nav a:hover { color: var(--text); }
+header.brand select.lang {
+    width: auto;
+    padding: 4px 6px;
+    background: transparent;
+    border: 1px solid var(--border);
+    font-size: 12px;
+}
+
+.card {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px;
+    margin-bottom: 16px;
+}
+.card-title {
+    color: var(--accent);
+    font-size: 18px;
+    font-weight: 500;
+    letter-spacing: -0.01em;
+    margin-top: 0;
+}
+
+.field { margin-bottom: 14px; }
+.field > label {
+    display: block;
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+}
+.opt-title,
+.field > label.strong {
+    font-size: 15px;
+    color: var(--text-dim);
+    font-weight: 600;
+}
+.field .hint {
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--text-dim);
+}
+
+.row {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+.row > * { flex: 1; min-width: 0; }
+
+.checkbox {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+}
+.checkbox input[type="checkbox"] {
+    width: auto;
+    margin-top: 3px;
+}
+.checkbox .label-text { flex: 1; }
+
+.tabs {
+    display: flex;
+    gap: 4px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 4px;
+    background: var(--bg-elev-2);
+    margin-bottom: 12px;
+}
+.tabs button {
+    flex: 1;
+    background: transparent;
+    color: var(--text-dim);
+    font-weight: 500;
+    padding: 8px 12px;
+    border-radius: 6px;
+}
+.tabs button.active {
+    background: var(--accent-soft);
+    color: var(--accent);
+    box-shadow: inset 0 0 0 1px var(--accent-line);
+}
+
+.dropzone {
+    border: 1.5px dashed var(--accent-line);
+    background: var(--accent-soft);
+    border-radius: var(--radius);
+    padding: 28px 16px;
+    text-align: center;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: border-color 0.12s ease, color 0.12s ease, background 0.12s ease;
+}
+.dropzone:hover, .dropzone.over {
+    border-color: var(--accent);
+    border-style: solid;
+    color: var(--text);
+}
+.dropzone .file-info {
+    color: var(--text);
+    font-weight: 600;
+    word-break: break-all;
+}
+
+.action-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.action-row > button { flex: 0 0 auto; }
+.action-row .grow { flex: 1; }
+
+.linkbox {
+    display: flex;
+    gap: 8px;
+    align-items: stretch;
+}
+.linkbox input {
+    font-family: var(--mono);
+    font-size: 13px;
+}
+.linkbox button { flex: 0 0 auto; }
+
+.meta-grid {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    font-size: 13px;
+}
+.meta-grid > div {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 6px 0;
+    border-bottom: 1px dashed var(--border);
+    min-width: 0;
+}
+.meta-grid > div:last-child { border-bottom: 0; }
+.meta-grid dt {
+    color: var(--text-dim);
+    margin: 0;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+.meta-grid dd {
+    color: var(--accent);
+    margin: 0;
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Subdued text-style buttons (e.g. "Show raw" above the text viewer). */
+.subtle-actions {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+.link-btn {
+    background: transparent;
+    color: var(--text-dim);
+    border: 0;
+    border-radius: 6px;
+    padding: 3px 8px;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease;
+}
+.link-btn:hover {
+    background: var(--accent-soft);
+    color: var(--accent);
+}
+
+/* Owner-only delete affordance on the result card. Real <a href="…"> so
+   right-click → Copy link works. Reddish to distinguish from the share
+   link, but kept small and de-emphasised. */
+.delete-link {
+    display: inline-block;
+    color: var(--danger);
+    background: rgba(239, 102, 113, 0.08);
+    border: 1px solid rgba(239, 102, 113, 0.32);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    text-decoration: none;
+    transition: background 0.12s ease, border-color 0.12s ease;
+}
+.delete-link:hover {
+    background: rgba(239, 102, 113, 0.16);
+    border-color: rgba(239, 102, 113, 0.55);
+}
+
+.viewer {
+    position: relative;
+    background: var(--bg-elev-2);
+    border: 1px solid var(--accent-line);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius);
+    padding: 16px;
+    overflow: auto;
+    max-width: 100%;
+}
+
+/* Square icon buttons pinned to the top-right of a .viewer (used for
+   copy / save-as-file in the read view). */
+.viewer-actions {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 6px;
+    z-index: 1;
+}
+.icon-btn {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg-elev);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.12s ease, color 0.12s ease, border-color 0.12s ease;
+}
+.icon-btn:hover {
+    background: var(--accent-soft);
+    border-color: var(--accent-line);
+    color: var(--accent);
+}
+.icon-btn.ok {
+    background: var(--accent-soft);
+    border-color: var(--accent-line);
+    color: var(--accent);
+}
+.icon-btn.error {
+    background: rgba(239, 102, 113, 0.10);
+    border-color: rgba(239, 102, 113, 0.45);
+    color: var(--danger);
+}
+.icon-btn svg { width: 16px; height: 16px; display: block; }
+/* Larger variant matched to input height (used inline with linkbox). */
+.icon-btn.lg { width: 42px; height: 42px; }
+.icon-btn.lg svg { width: 18px; height: 18px; }
+/* Add headroom inside the viewer so wrapped text never slides under the
+   absolutely-positioned action buttons. */
+.viewer.with-actions { padding-right: 88px; }
+.viewer pre {
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    font-family: var(--mono);
+    font-size: 13px;
+    line-height: 1.5;
+}
+.viewer pre.code {
+    white-space: pre;
+    word-break: normal;
+    overflow-x: auto;
+}
+.viewer .markdown :is(h1, h2, h3) { line-height: 1.25; }
+.viewer .markdown pre {
+    background: var(--bg-elev-2);
+    padding: 10px 12px;
+    border-radius: 6px;
+    overflow-x: auto;
+}
+.viewer .markdown code {
+    background: var(--bg-elev-2);
+    padding: 1px 4px;
+    border-radius: 4px;
+    font-size: 13px;
+}
+.viewer .markdown a { color: var(--accent); }
+.viewer .markdown blockquote {
+    border-left: 3px solid var(--border);
+    margin: 0; padding-left: 12px;
+    color: var(--text-dim);
+}
+
+.notice {
+    padding: 12px 14px;
+    border-radius: var(--radius);
+    background: var(--accent-soft);
+    border: 1px solid var(--accent-line);
+    border-left: 3px solid var(--accent);
+    font-size: 13px;
+}
+.notice.warn {
+    background: rgba(239, 102, 113, 0.10);
+    border-color: rgba(239, 102, 113, 0.35);
+    border-left-color: var(--danger);
+}
+.notice.warn strong { color: var(--danger); }
+
+
+@keyframes fade-in {
+    from { opacity: 0; transform: translateY(2px); }
+    to   { opacity: 1; transform: none; }
+}
+
+/* highlight.js — minimal one-dark-ish theme inlined so we don't pull a CSS asset. */
+.hljs-keyword, .hljs-selector-tag, .hljs-built_in, .hljs-name, .hljs-tag { color: #c678dd; }
+.hljs-string, .hljs-attr, .hljs-symbol, .hljs-bullet, .hljs-link { color: #98c379; }
+.hljs-title, .hljs-section, .hljs-attribute, .hljs-variable, .hljs-template-variable { color: #61afef; }
+.hljs-number, .hljs-literal, .hljs-meta { color: #d19a66; }
+.hljs-comment, .hljs-quote { color: #5c6370; font-style: italic; }
+.hljs-emphasis { font-style: italic; }
+.hljs-strong { font-weight: bold; }
+:root.light .hljs-keyword, :root.light .hljs-selector-tag { color: #a626a4; }
+:root.light .hljs-string { color: #50a14f; }
+:root.light .hljs-title  { color: #4078f2; }
+:root.light .hljs-number { color: #986801; }
+:root.light .hljs-comment { color: #a0a1a7; }

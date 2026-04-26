@@ -1,0 +1,156 @@
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  # ----------------------------------------------------------------------------
+  # Plain build + tests on every push and PR. Uses Debian 13 so the system
+  # libsodium / mbedtls / sqlite3 are all in apt.
+  # ----------------------------------------------------------------------------
+  build-test:
+    name: build & test (debian 13)
+    runs-on: ubuntu-latest
+    container: debian:13
+    steps:
+      - name: install deps
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential cmake pkg-config git ca-certificates \
+            libsqlite3-dev libsodium-dev libmbedtls-dev \
+            nodejs npm python3
+      - uses: actions/checkout@v4
+      - name: build web bundle
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+          bash embed.sh
+      - name: configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+      - name: build
+        run: cmake --build build -j
+      - name: ctest
+        run: ctest --test-dir build --output-on-failure
+      - name: e2e tests
+        working-directory: web
+        run: node --test tests/
+
+  # ----------------------------------------------------------------------------
+  # Release artifacts: server + CLI for Debian 12 and Debian 13. Only runs on
+  # tag pushes (v*). Built inside the matching distro container so the binary
+  # links against the distro's libc / libsodium / mbedtls. Tarballs include
+  # both the daemon and the CLI.
+  # ----------------------------------------------------------------------------
+  release-linux:
+    name: release linux (debian ${{ matrix.debian }})
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build-test
+    runs-on: ubuntu-latest
+    container: debian:${{ matrix.debian }}
+    strategy:
+      fail-fast: false
+      matrix:
+        debian: ["12", "13"]
+    steps:
+      - name: install deps
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential cmake pkg-config git ca-certificates \
+            libsqlite3-dev libsodium-dev libmbedtls-dev \
+            nodejs npm python3
+      - uses: actions/checkout@v4
+      - name: build web bundle
+        working-directory: web
+        run: |
+          npm ci
+          npm run build
+          bash embed.sh
+      - name: configure & build
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build -j
+      - name: stage release
+        run: |
+          STAGE="cryptoblin-${GITHUB_REF_NAME}-debian${{ matrix.debian }}-x86_64"
+          mkdir -p "$STAGE"
+          cp build/src/cryptoblin "$STAGE/"
+          cp build/cli/blin       "$STAGE/"
+          cp LICENSE README.md    "$STAGE/" 2>/dev/null || true
+          tar czf "${STAGE}.tar.gz" "$STAGE"
+          sha256sum "${STAGE}.tar.gz" > "${STAGE}.tar.gz.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cryptoblin-debian${{ matrix.debian }}
+          path: cryptoblin-*-debian${{ matrix.debian }}-*.tar.gz*
+
+  # ----------------------------------------------------------------------------
+  # Windows CLI build via vcpkg. Server is not built on Windows (the daemon
+  # needs sqlite/crow tuned for POSIX); only the `blin.exe` client.
+  # ----------------------------------------------------------------------------
+  release-windows:
+    name: release windows (cli)
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: build-test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: vcpkg deps
+        run: |
+          vcpkg install libsodium:x64-windows-static-md mbedtls:x64-windows-static-md
+        shell: pwsh
+      - name: configure
+        run: |
+          cmake -B build -DCMAKE_BUILD_TYPE=Release `
+            -DBUILD_SERVER=OFF -DBUILD_CLI=ON `
+            -DCMAKE_TOOLCHAIN_FILE="$env:VCPKG_INSTALLATION_ROOT/scripts/buildsystems/vcpkg.cmake" `
+            -DVCPKG_TARGET_TRIPLET=x64-windows-static-md
+        shell: pwsh
+      - name: build
+        run: cmake --build build --config Release -j
+      - name: stage release
+        run: |
+          $stage = "blin-$($env:GITHUB_REF_NAME)-windows-x86_64"
+          New-Item -ItemType Directory -Path $stage | Out-Null
+          Copy-Item build\cli\Release\blin.exe -Destination $stage\
+          if (Test-Path LICENSE)   { Copy-Item LICENSE $stage\ }
+          if (Test-Path README.md) { Copy-Item README.md $stage\ }
+          Compress-Archive -Path $stage -DestinationPath "$stage.zip"
+          (Get-FileHash "$stage.zip" -Algorithm SHA256).Hash | Out-File "$stage.zip.sha256"
+        shell: pwsh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: blin-windows
+          path: blin-*-windows-*.zip*
+
+  # ----------------------------------------------------------------------------
+  # On a tag push, gather all release artifacts and attach them to the GitHub
+  # release. Created/updated by softprops/action-gh-release.
+  # ----------------------------------------------------------------------------
+  publish-release:
+    name: publish github release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [release-linux, release-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+      - name: flatten
+        run: |
+          mkdir -p out
+          find dist -type f \( -name '*.tar.gz' -o -name '*.zip' -o -name '*.sha256' \) \
+              -exec cp {} out/ \;
+          ls -la out
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: out/*
+          generate_release_notes: true

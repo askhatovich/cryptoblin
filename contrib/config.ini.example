@@ -1,0 +1,36 @@
+[server]
+; Log level: verbose, debug, info, warning, error, fatal, none
+log_level = info
+bind_address = 0.0.0.0
+bind_port = 8080
+; Brand name shown on the home page heading.
+app_name = CryptoBlin
+
+[storage]
+; SQLite database file holding paste metadata only (id, sizes, expiry, view count).
+db_path  = /var/lib/cryptoblin/cryptoblin.sqlite
+; Directory holding raw ciphertext blobs, one file per paste.
+blob_dir = /var/lib/cryptoblin/blobs
+
+[retention]
+; Hard upper bound on a single paste, in bytes (default: 100 MB).
+max_paste_bytes = 104857600
+; TTL is computed linearly from size so large pastes self-destruct sooner:
+;   ttl = max_ttl - (max_ttl - min_ttl) * (size / max_paste_bytes)
+; A 1-byte paste lives ~max_ttl_seconds; a max_paste_bytes paste lives min_ttl_seconds.
+min_ttl_seconds = 3600
+max_ttl_seconds = 2592000
+
+[limits]
+; Minimum interval (seconds) between captcha issuances from the same IP.
+; Paste reads (/api/pastes/<id>/{open,blob}) are NOT rate-limited. 0 = disabled.
+rate_limit_per_ip_seconds = 3
+; Hard cap on the number of pastes stored on this instance (0 = unlimited).
+total_pastes_cap = 0
+
+[captcha]
+; Proof-of-work difficulty: required leading zero bits of
+; SHA-256(token + ":" + nonce). 18 ≈ 1-3 seconds of browser CPU.
+difficulty_bits = 18
+; How long an issued captcha stays valid, in seconds.
+ttl_seconds = 300
