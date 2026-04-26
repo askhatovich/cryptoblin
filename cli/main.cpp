@@ -350,9 +350,13 @@ int cmdSend(int argc, char** argv) {
     field("burn",       burn ? "true" : "false");
     field("password",   hasPassword ? "true" : "false");
     field("delete",     deleteUrl);
+    // Blank line on stderr separates the status record from the data on
+    // stdout when both streams are merged in a terminal.
+    std::cerr << "\n";
     // The share URL is the data product of `send` — print it on stdout so a
-    // shell pipe can capture exactly that one line.
-    std::cout << shareUrl << "\n";
+    // shell pipe can capture exactly that one line. The trailing blank line
+    // gives the terminal user a clean break after the payload.
+    std::cout << shareUrl << "\n\n";
     return 0;
 }
 
@@ -473,6 +477,9 @@ int cmdGet(int argc, char** argv) {
         field("file_bytes", std::to_string(p.file->body.size()));
     }
 
+    // Visual separator between the status record and the payload.
+    std::cerr << "\n";
+
     // Decide where the text goes:
     //   - if -o is given and there is no attached file, write text to OUTFILE
     //   - otherwise write text body verbatim to stdout (no added newline)
@@ -506,6 +513,9 @@ int cmdGet(int argc, char** argv) {
                 static_cast<std::streamsize>(p.file->body.size()));
         field("file_path", out);
     }
+    // Trailing newline on stdout — leaves the cursor on a fresh line after
+    // a payload that may or may not have ended in '\n'.
+    std::cout << "\n";
     return 0;
 }
 
@@ -538,6 +548,7 @@ int cmdDelete(int argc, char** argv) {
     if (res.status == 200) {
         field("id",     pu.id);
         field("status", "deleted");
+        std::cerr << "\n";
         return 0;
     }
     const std::string body(res.body.begin(), res.body.end());
