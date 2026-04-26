@@ -1,4 +1,6 @@
-# cryptoblin
+# CryptoBlin
+
+[English](README.md) · [Русский](README_ru.md)
 
 Self-hosted, zero-knowledge note and file sharing.
 
@@ -10,7 +12,7 @@ prove they hold the right key.
 The name is a shortening of **Crypto Blob Insert**, doubling as the Russian
 word **блин** ("blin", a thin pancake) — quick, light, eaten in one go.
 
-Inspired by [PrivateBin](https://github.com/PrivateBin/PrivateBin); cryptoblin
+Inspired by [PrivateBin](https://github.com/PrivateBin/PrivateBin); CryptoBlin
 is a modern descendant aimed at simplicity, performance, and noticeably better
 handling of large file attachments.
 
@@ -168,7 +170,7 @@ DB call. Missing token, wrong token, missing id all collapse to
 
 ## Threat model
 
-cryptoblin is designed to keep specific attackers out of specific data. It is
+CryptoBlin is designed to keep specific attackers out of specific data. It is
 not magic; the limits below matter.
 
 ### What is mitigated
@@ -215,7 +217,7 @@ not magic; the limits below matter.
 - **Log/replay of the URL.** Anyone who sees the full URL (including the
   fragment) can read the paste until TTL or burn. Treat URLs as secrets.
 - **Anonymity / metadata.** The server logs IPs by default for rate limiting
-  and PoW issuance. cryptoblin is about content secrecy, not anonymity. Pair
+  and PoW issuance. CryptoBlin is about content secrecy, not anonymity. Pair
   with Tor / a proxy if anonymity matters.
 - **Denial of service.** PoW + per-IP rate limit + size cap raise the cost
   of bulk creation, but a determined attacker with many IPs can still flood
