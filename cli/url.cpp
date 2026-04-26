@@ -58,9 +58,21 @@ ServerUrl parseServerUrl(const std::string& s) {
 PasteUrl parsePasteUrl(const std::string& s) {
     // Find the fragment portion. Accept full URL or bare fragment.
     std::string frag;
+    std::string serverPart;
     const auto h = s.find('#');
     if (h != std::string::npos) {
-        frag = s.substr(h + 1);
+        frag       = s.substr(h + 1);
+        serverPart = s.substr(0, h);
+        // Trim a trailing slash so the resulting server URL has no path.
+        if (!serverPart.empty() && serverPart.back() == '/') {
+            serverPart.pop_back();
+        }
+        // Only keep it if it actually looks like an http(s):// URL — otherwise
+        // we silently fall back to the config server.
+        if (serverPart.rfind("http://", 0) != 0 &&
+            serverPart.rfind("https://", 0) != 0) {
+            serverPart.clear();
+        }
     } else {
         frag = s;
     }
@@ -69,6 +81,7 @@ PasteUrl parsePasteUrl(const std::string& s) {
     }
 
     PasteUrl out;
+    out.serverFromUrl = serverPart;
     if (frag.rfind("del:", 0) == 0) {
         out.kind = PasteUrl::Kind::Delete;
         const auto rest = frag.substr(4);

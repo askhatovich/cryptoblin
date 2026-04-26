@@ -380,7 +380,12 @@ int cmdGet(int argc, char** argv) {
         password = readPasswordPrompt("password: ");
     }
 
-    const auto serverUrlStr = blin::loadServer();
+    // The URL itself wins over config: if the user pasted a full
+    // `https://host/#…` link, talk to that host. The config SERVER= is only
+    // a fallback for bare-fragment input.
+    const auto serverUrlStr = !pu.serverFromUrl.empty()
+                                ? pu.serverFromUrl
+                                : blin::loadServer();
     const auto server = blin::parseServerUrl(serverUrlStr);
 
     blin::cryptoInit();
@@ -521,7 +526,10 @@ int cmdDelete(int argc, char** argv) {
         die("not a delete URL (expected #del:<id>:<token>)");
     }
 
-    const auto server = blin::parseServerUrl(blin::loadServer());
+    const auto serverUrlStr = !pu.serverFromUrl.empty()
+                                ? pu.serverFromUrl
+                                : blin::loadServer();
+    const auto server = blin::parseServerUrl(serverUrlStr);
     blin::Request req{};
     req.method = "DELETE";
     req.path   = "/api/pastes/" + pu.id;

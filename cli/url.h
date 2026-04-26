@@ -21,6 +21,9 @@ struct PasteUrl {
     std::string seed;        // View only
     bool        hasPassword  = false;
     std::string deleteToken; // Delete only (base64)
+    // Server portion of the input, if the caller supplied a full URL such as
+    // `https://paste.example/#…`. Empty when only the fragment was given.
+    std::string serverFromUrl;
 };
 
 // Accepts either a full URL with a fragment, or just the fragment portion.
