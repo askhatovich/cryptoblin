@@ -477,41 +477,47 @@ int cmdGet(int argc, char** argv) {
         field("file_bytes", std::to_string(p.file->body.size()));
     }
 
+    // Resolve output paths and emit text_path/file_path BEFORE writing any
+    // bytes — that keeps the status record contiguous on stderr, with the
+    // payload starting only after the blank-line separator below.
+    std::string textOutPath;
+    std::string fileOutPath;
+    if (!p.text.empty() && !outFile.empty() && !p.file) {
+        textOutPath = outFile;
+        field("text_path", textOutPath);
+    }
+    if (p.file) {
+        const bool userPath = !outFile.empty();
+        fileOutPath = userPath ? outFile : safeBasename(p.file->name);
+        if (!userPath) {
+            std::ifstream probe(fileOutPath);
+            if (probe.good()) {
+                die("refusing to overwrite existing file: " + fileOutPath
+                    + " (pass -o PATH to override)");
+            }
+        }
+        field("file_path", fileOutPath);
+    }
+
     // Visual separator between the status record and the payload.
     std::cerr << "\n";
 
-    // Decide where the text goes:
-    //   - if -o is given and there is no attached file, write text to OUTFILE
-    //   - otherwise write text body verbatim to stdout (no added newline)
+    // Text body: either to OUTFILE (when -o is set and there is no attachment)
+    // or verbatim to stdout.
     if (!p.text.empty()) {
-        if (!outFile.empty() && !p.file) {
-            std::ofstream f(outFile, std::ios::binary);
-            if (!f) die("cannot write " + outFile);
+        if (!textOutPath.empty()) {
+            std::ofstream f(textOutPath, std::ios::binary);
+            if (!f) die("cannot write " + textOutPath);
             f.write(p.text.data(), static_cast<std::streamsize>(p.text.size()));
-            field("text_path", outFile);
         } else {
             std::fwrite(p.text.data(), 1, p.text.size(), stdout);
         }
     }
-
-    // Save attached file. With -o the user override wins; otherwise use the
-    // sender-provided filename, but only its basename — never a path.
-    // Refuse to overwrite an existing file unless -o is set explicitly.
     if (p.file) {
-        const bool userPath = !outFile.empty();
-        const std::string out = userPath ? outFile : safeBasename(p.file->name);
-        if (!userPath) {
-            std::ifstream probe(out);
-            if (probe.good()) {
-                die("refusing to overwrite existing file: " + out
-                    + " (pass -o PATH to override)");
-            }
-        }
-        std::ofstream f(out, std::ios::binary);
-        if (!f) die("cannot write " + out);
+        std::ofstream f(fileOutPath, std::ios::binary);
+        if (!f) die("cannot write " + fileOutPath);
         f.write(reinterpret_cast<const char*>(p.file->body.data()),
                 static_cast<std::streamsize>(p.file->body.size()));
-        field("file_path", out);
     }
     // Trailing newline on stdout — leaves the cursor on a fresh line after
     // a payload that may or may not have ended in '\n'.
