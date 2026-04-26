@@ -34,9 +34,9 @@ namespace {
 constexpr const char* kHelp = R"(blin — CLI client for cryptoblin (zero-knowledge note sharing)
 
 USAGE
-  blin send   [-f text|markdown|highlight] [-l LANG] [-p PASSWORD] [-b] [FILE]
-  blin get    URL [-p PASSWORD] [-o OUTFILE]
-  blin delete URL
+  blin send   [-f text|markdown|highlight] [-l LANG] [-p PASSWORD] [-b] [-s] [FILE]
+  blin get    URL [-p PASSWORD] [-o OUTFILE] [-s]
+  blin delete URL [-s]
   blin --help
 
 COMMANDS
@@ -62,6 +62,9 @@ OPTIONS
                is required.
   -b           send: burn-after-read. The note destroys itself on first open.
   -o OUTFILE   get:  save the attached file (or text) to OUTFILE.
+  -s           silent. Suppress all stderr output (status records, progress,
+               error messages); only the stdout payload is emitted. Exit
+               status is 0 on success, 1 on any failure.
 
 CONFIG
   Server URL is read from $HOME/.config/askhatovich/cryptoblin/config.conf
@@ -94,19 +97,36 @@ EXAMPLES
 //   "blin: " + free-form one-liner status (progress, info)
 //   "<key>: " + value (machine-parseable record fields)
 // `error: <msg>` is reserved for fatal errors.
+//
+// `-s` flips on silent mode: all stderr is suppressed and only the stdout
+// payload remains. Failures still exit with a non-zero status, but without
+// any diagnostic text.
+bool g_silent = false;
+
 void die(const std::string& msg) {
-    std::cerr << "blin: error: " << msg << "\n";
+    if (!g_silent) {
+        std::cerr << "blin: error: " << msg << "\n";
+    }
     std::exit(1);
 }
 
 void info(const std::string& msg) {
+    if (g_silent) return;
     std::cerr << "blin: " << msg << "\n";
 }
 
 // Print a "key: value" record line on stderr. Keys are short snake_case,
 // values are unquoted free-form text up to end of line.
 void field(const std::string& key, const std::string& value) {
+    if (g_silent) return;
     std::cerr << key << ": " << value << "\n";
+}
+
+// Emit a literal newline to stderr (separator between the status record and
+// the payload). Skipped in silent mode.
+void sep() {
+    if (g_silent) return;
+    std::cerr << "\n";
 }
 
 blin::Bytes readAllStdin() {
@@ -247,6 +267,8 @@ int cmdSend(int argc, char** argv) {
             password = argv[++i];
         } else if (a == "-b") {
             burn = true;
+        } else if (a == "-s") {
+            g_silent = true;
         } else if (a == "--help" || a == "-h") {
             std::cout << kHelp;
             return 0;
@@ -352,7 +374,7 @@ int cmdSend(int argc, char** argv) {
     field("delete",     deleteUrl);
     // Blank line on stderr separates the status record from the data on
     // stdout when both streams are merged in a terminal.
-    std::cerr << "\n";
+    sep();
     // The share URL is the data product of `send` — print it on stdout so a
     // shell pipe can capture exactly that one line.
     std::cout << shareUrl << "\n";
@@ -368,6 +390,7 @@ int cmdGet(int argc, char** argv) {
         const std::string a = argv[i];
         if      (a == "-p" && i + 1 < argc) password = argv[++i];
         else if (a == "-o" && i + 1 < argc) outFile  = argv[++i];
+        else if (a == "-s")                 g_silent = true;
         else if (a == "--help" || a == "-h") { std::cout << kHelp; return 0; }
         else if (!a.empty() && a[0] == '-') die("unknown option: " + a);
         else                                 urlArg = a;
@@ -380,6 +403,9 @@ int cmdGet(int argc, char** argv) {
         die("not a view URL");
     }
     if (pu.hasPassword && password.empty()) {
+        if (g_silent) {
+            die("password required (pass via -p)");
+        }
         password = readPasswordPrompt("password: ");
     }
 
@@ -499,7 +525,7 @@ int cmdGet(int argc, char** argv) {
     }
 
     // Visual separator between the status record and the payload.
-    std::cerr << "\n";
+    sep();
 
     // Text body: either to OUTFILE (when -o is set and there is no attachment)
     // or verbatim to stdout.
@@ -530,6 +556,7 @@ int cmdDelete(int argc, char** argv) {
     for (int i = 0; i < argc; ++i) {
         const std::string a = argv[i];
         if (a == "--help" || a == "-h") { std::cout << kHelp; return 0; }
+        if (a == "-s") { g_silent = true; continue; }
         if (!a.empty() && a[0] == '-')   die("unknown option: " + a);
         urlArg = a;
     }
@@ -553,7 +580,7 @@ int cmdDelete(int argc, char** argv) {
     if (res.status == 200) {
         field("id",     pu.id);
         field("status", "deleted");
-        std::cerr << "\n";
+        sep();
         return 0;
     }
     const std::string body(res.body.begin(), res.body.end());

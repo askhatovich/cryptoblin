@@ -296,19 +296,56 @@ ttl_seconds     = 300
 
 ## CLI
 
+`blin` is a portable command-line client that speaks the same protocol as
+the web UI: cryptography in-process, server only sees ciphertext.
+
 ```sh
-echo "secret" | blin send                        # text from stdin
-blin send -b README.md                            # burn-after-read, file only
-echo "see attached" | blin send report.pdf       # text + attachment
+echo "secret" | blin send                            # text from stdin
+blin send -b README.md                                # burn-after-read, file only
+echo "see attached" | blin send report.pdf           # text + attachment
+echo "private" | blin send -p hunter2                 # password-protected
 blin get https://paste.dotcpp.ru/#abcd1234:wxyz5678
 blin delete https://paste.dotcpp.ru/#del:abcd1234:AAA…
 ```
 
-Server URL is read from `$HOME/.config/askhatovich/cryptoblin/config.conf`
-(format: `SERVER=https://example.com`); default is `https://paste.dotcpp.ru`.
+**Subcommands**
 
-`blin --help` documents every flag and the stdout/stderr contract (data on
-stdout, machine-parseable `key: value` records on stderr).
+- `send` — read text from stdin (when piped) and/or attach the trailing
+  `FILE` arg, encrypt and upload. Prints the share URL on stdout and the
+  one-shot delete URL on stderr.
+- `get` — fetch and decrypt the URL. Text body lands on stdout; an attached
+  file is saved into the current directory under its original (basename-
+  sanitised) filename, refusing to overwrite unless `-o PATH` is given.
+- `delete` — owner-only delete using the URL printed by `send`.
+
+**Flags**
+
+`-f text|markdown|highlight`, `-l LANG` (highlight language hint),
+`-p PASSWORD`, `-b` (burn-after-read), `-o OUTFILE` (save target for `get`),
+`-s` (silent: suppress stderr, exit 0/1 only).
+
+**Server selection**
+
+For `get`/`delete`, the server is taken **from the URL** when it carries
+an `https://host/#…` prefix; otherwise (and always for `send`) the CLI
+reads `$HOME/.config/askhatovich/cryptoblin/config.conf`
+(`SERVER=https://example.com`). Default is `https://paste.dotcpp.ru`.
+
+**Output contract**
+
+- stdout — payload only: share URL (`send`), text body (`get`), nothing
+  (`delete`). With `-s` everything else is muted, exit 1 on any failure.
+- stderr — `blin: <msg>` progress lines, `<key>: <value>` status records
+  (`id`, `size`, `views`, `format`, `file_path`, …), `blin: error: <msg>`
+  on failure. A blank line separates the record block from the payload.
+
+`blin --help` lists every flag and the full set of `key: value` fields.
+
+Pre-built binaries are attached to every GitHub release:
+
+- `blin-<tag>-linux-x86_64-static.tar.gz` — single musl-static binary
+  that runs on any Linux distribution.
+- `blin-<tag>-windows-x86_64.zip` — `blin.exe` for Windows.
 
 ---
 
