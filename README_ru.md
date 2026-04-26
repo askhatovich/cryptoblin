@@ -331,9 +331,10 @@ ctest --test-dir build --output-on-failure
 cd web && node --test tests/
 ```
 
-Релизы выпускаются через GitHub Actions при пуше тегов `v*`: Linux-tarball'ы
-для Debian 12 и Debian 13 (сервер + CLI) и Windows-zip с `blin.exe`.
-SHA-256-суммы лежат рядом с каждым артефактом.
+Релизы выпускаются через GitHub Actions при пуше тегов `v*`: `.deb`-пакеты
+сервера для Debian 12 и Debian 13, musl-static tarball с `blin` для Linux
+и Windows-zip с `blin.exe`. GitHub автоматически публикует SHA-256 для
+каждого артефакта прямо на странице релиза.
 
 ---
 

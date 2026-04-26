@@ -359,9 +359,10 @@ ctest --test-dir build --output-on-failure
 cd web && node --test tests/
 ```
 
-Releases are produced by GitHub Actions on `v*` tags: Linux tarballs for
-Debian 12 and Debian 13 (server + CLI), and a Windows zip with `blin.exe`.
-SHA-256 sums sit next to each artifact.
+Releases are produced by GitHub Actions on `v*` tags: server `.deb` packages
+for Debian 12 and Debian 13, a musl-static `blin` tarball for Linux, and a
+Windows zip with `blin.exe`. GitHub publishes a SHA-256 digest for every
+release asset on the release page itself.
 
 ---
 
