@@ -25,8 +25,9 @@ function tryGit(cmd, fallback) {
     }
 }
 
-const version = process.env.APP_VERSION
-    || tryGit('git describe --tags --dirty', 'dev').replace(/^v/, '');
+const version = (process.env.APP_VERSION
+    || tryGit('git describe --tags --dirty', 'dev'))
+    .replace(/^v/, '');
 const shortHash = tryGit('git rev-parse --short HEAD', 'unknown');
 
 const tpl = readFileSync(SRC, 'utf8');
