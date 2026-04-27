@@ -122,12 +122,12 @@ jobs:
       - name: stage release
         run: |
           # Pack the binary at archive top level — no nested directory —
-          # so `tar xf blin-linux-x86_64-static.tar.gz` yields `blin` directly.
-          tar czf blin-linux-x86_64-static.tar.gz -C build/cli blin
+          # so `tar xf blin-cli-linux-x86_64-static.tar.gz` yields `blin` directly.
+          tar czf blin-cli-linux-x86_64-static.tar.gz -C build/cli blin
       - uses: actions/upload-artifact@v4
         with:
-          name: blin-linux-static
-          path: blin-linux-x86_64-static.tar.gz
+          name: blin-cli-linux-static
+          path: blin-cli-linux-x86_64-static.tar.gz
 
   # ----------------------------------------------------------------------------
   # Windows CLI build via vcpkg. Server is not built on Windows — only blin.exe.
@@ -159,12 +159,12 @@ jobs:
           # Pack the binary at archive top level — no nested directory —
           # so unzipping yields `blin.exe` directly.
           Compress-Archive -Path build\cli\Release\blin.exe `
-            -DestinationPath blin-windows-x86_64.zip
+            -DestinationPath blin-cli-windows-x86_64.zip
         shell: pwsh
       - uses: actions/upload-artifact@v4
         with:
-          name: blin-windows
-          path: blin-windows-x86_64.zip
+          name: blin-cli-windows
+          path: blin-cli-windows-x86_64.zip
 
   # ----------------------------------------------------------------------------
   # Gather all artifacts and attach them to the GitHub Release for the tag.
