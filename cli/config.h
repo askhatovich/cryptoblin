@@ -5,7 +5,7 @@
 namespace blin {
 
 // Default upstream. Overridden by SERVER= in
-// $HOME/.config/askhatovich/cryptoblin/config.conf.
+// $HOME/.config/askhatovich/cryptoblin.conf.
 inline constexpr const char* kDefaultServer = "https://paste.dotcpp.ru";
 
 std::string loadServer();

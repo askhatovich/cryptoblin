@@ -330,7 +330,7 @@ blin get https://paste.dotcpp.ru/#abcd1234:wxyz5678
 blin delete https://paste.dotcpp.ru/#del:abcd1234:AAA…
 ```
 
-URL сервера читается из `$HOME/.config/askhatovich/cryptoblin/config.conf`
+URL сервера читается из `$HOME/.config/askhatovich/cryptoblin.conf`
 (формат: `SERVER=https://example.com`); по умолчанию используется
 `https://paste.dotcpp.ru`. Для команд `get` и `delete` CLI использует
 сервер из самой ссылки, если она передана с префиксом `http(s)://host/`;

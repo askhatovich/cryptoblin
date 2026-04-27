@@ -333,7 +333,7 @@ blin delete https://paste.dotcpp.ru/#del:abcd1234:AAA…
 
 For `get`/`delete`, the server is taken **from the URL** when it carries
 an `https://host/#…` prefix; otherwise (and always for `send`) the CLI
-reads `$HOME/.config/askhatovich/cryptoblin/config.conf`
+reads `$HOME/.config/askhatovich/cryptoblin.conf`
 (`SERVER=https://example.com`). Default is `https://paste.dotcpp.ru`.
 
 **Output contract**

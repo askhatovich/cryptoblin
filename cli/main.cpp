@@ -67,7 +67,7 @@ OPTIONS
                status is 0 on success, 1 on any failure.
 
 CONFIG
-  Server URL is read from $HOME/.config/askhatovich/cryptoblin/config.conf
+  Server URL is read from $HOME/.config/askhatovich/cryptoblin.conf
   (single line: SERVER=https://example.com). Default is https://paste.dotcpp.ru.
 
 OUTPUT FORMAT

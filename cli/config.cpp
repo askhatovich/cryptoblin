@@ -27,7 +27,7 @@ std::string loadServer() {
         return kDefaultServer;
     }
     const std::string path =
-        std::string(home) + "/.config/askhatovich/cryptoblin/config.conf";
+        std::string(home) + "/.config/askhatovich/cryptoblin.conf";
     std::ifstream f(path);
     if (!f) {
         return kDefaultServer;
