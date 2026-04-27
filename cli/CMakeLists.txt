@@ -5,6 +5,14 @@ cmake_minimum_required(VERSION 3.16)
 # Linux distribution without library version skew.
 option(BLIN_STATIC "Statically link the blin binary" OFF)
 
+# When asked for a static build, make `find_library` prefer .a over .so.
+# Without this, find_library returns the full path to libmbedtls.so and
+# the eventual `-static` flag has no effect because full-path arguments
+# bypass the linker's static/dynamic search rules.
+if(BLIN_STATIC)
+    set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
+endif()
+
 # --- libsodium: prefer vcpkg's CMake config, fall back to pkg-config (Linux). --
 find_package(unofficial-sodium CONFIG QUIET)
 if(unofficial-sodium_FOUND)
@@ -63,7 +71,9 @@ endif()
 
 if(BLIN_STATIC)
     target_link_options(blin PRIVATE -static)
-    set_target_properties(blin PROPERTIES LINK_SEARCH_START_STATIC ON)
+    set_target_properties(blin PROPERTIES
+        LINK_SEARCH_START_STATIC ON
+        LINK_SEARCH_END_STATIC   ON)
 endif()
 
 include(GNUInstallDirs)
