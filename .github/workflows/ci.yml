@@ -121,15 +121,13 @@ jobs:
           ldd  build/cli/blin || true
       - name: stage release
         run: |
-          STAGE="blin-${GITHUB_REF_NAME}-linux-x86_64-static"
-          mkdir -p "$STAGE"
-          cp build/cli/blin "$STAGE/"
-          cp LICENSE README.md README_ru.md "$STAGE/" 2>/dev/null || true
-          tar czf "${STAGE}.tar.gz" "$STAGE"
+          # Pack the binary at archive top level — no nested directory —
+          # so `tar xf blin-linux-x86_64-static.tar.gz` yields `blin` directly.
+          tar czf blin-linux-x86_64-static.tar.gz -C build/cli blin
       - uses: actions/upload-artifact@v4
         with:
           name: blin-linux-static
-          path: blin-*-linux-x86_64-static.tar.gz
+          path: blin-linux-x86_64-static.tar.gz
 
   # ----------------------------------------------------------------------------
   # Windows CLI build via vcpkg. Server is not built on Windows — only blin.exe.
@@ -158,18 +156,15 @@ jobs:
         run: cmake --build build --config Release -j
       - name: stage release
         run: |
-          $stage = "blin-$($env:GITHUB_REF_NAME)-windows-x86_64"
-          New-Item -ItemType Directory -Path $stage | Out-Null
-          Copy-Item build\cli\Release\blin.exe -Destination $stage\
-          if (Test-Path LICENSE)      { Copy-Item LICENSE      $stage\ }
-          if (Test-Path README.md)    { Copy-Item README.md    $stage\ }
-          if (Test-Path README_ru.md) { Copy-Item README_ru.md $stage\ }
-          Compress-Archive -Path $stage -DestinationPath "$stage.zip"
+          # Pack the binary at archive top level — no nested directory —
+          # so unzipping yields `blin.exe` directly.
+          Compress-Archive -Path build\cli\Release\blin.exe `
+            -DestinationPath blin-windows-x86_64.zip
         shell: pwsh
       - uses: actions/upload-artifact@v4
         with:
           name: blin-windows
-          path: blin-*-windows-*.zip
+          path: blin-windows-x86_64.zip
 
   # ----------------------------------------------------------------------------
   # Gather all artifacts and attach them to the GitHub Release for the tag.
