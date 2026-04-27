@@ -13,18 +13,30 @@ if(BLIN_STATIC)
     set(CMAKE_FIND_LIBRARY_SUFFIXES .a)
 endif()
 
-# --- libsodium: prefer vcpkg's CMake config, fall back to pkg-config (Linux). --
-find_package(unofficial-sodium CONFIG QUIET)
+# Under BLIN_STATIC we deliberately avoid CMake CONFIG packages (vcpkg's
+# `unofficial-sodium`, Alpine's `MbedTLS`) — their imported targets pin the
+# full path to a `.so` in INTERFACE_LINK_LIBRARIES, which silently bypasses
+# CMAKE_FIND_LIBRARY_SUFFIXES and the eventual `-static` linker flag, and
+# we end up dynamically linked anyway. With BLIN_STATIC we go straight to
+# find_library and let the suffix override pick `.a`.
+
+# --- libsodium ----------------------------------------------------------------
+if(NOT BLIN_STATIC)
+    find_package(unofficial-sodium CONFIG QUIET)
+endif()
 if(unofficial-sodium_FOUND)
     set(BLIN_SODIUM_TARGET unofficial-sodium::sodium)
 else()
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(SODIUM REQUIRED IMPORTED_TARGET libsodium)
-    set(BLIN_SODIUM_TARGET PkgConfig::SODIUM)
+    find_library(SODIUM_LIB sodium REQUIRED)
+    find_path(SODIUM_INCLUDE_DIR sodium.h REQUIRED)
+    set(BLIN_SODIUM_TARGET ${SODIUM_LIB})
+    set(BLIN_SODIUM_INCLUDE ${SODIUM_INCLUDE_DIR})
 endif()
 
-# --- mbedTLS: prefer vcpkg's CMake config, fall back to find_library. ---------
-find_package(MbedTLS CONFIG QUIET)
+# --- mbedTLS ------------------------------------------------------------------
+if(NOT BLIN_STATIC)
+    find_package(MbedTLS CONFIG QUIET)
+endif()
 if(MbedTLS_FOUND)
     set(BLIN_MBEDTLS_TARGETS MbedTLS::mbedtls MbedTLS::mbedx509 MbedTLS::mbedcrypto)
     set(BLIN_MBEDTLS_INCLUDE "")
@@ -52,6 +64,7 @@ add_executable(blin
 target_include_directories(blin PRIVATE
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/src
+    ${BLIN_SODIUM_INCLUDE}
     ${BLIN_MBEDTLS_INCLUDE}
 )
 
