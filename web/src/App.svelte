@@ -66,7 +66,7 @@
     }
 </script>
 
-<div class="app-shell">
+<div class="app-shell" class:wide={route.route === 'view'}>
     <header class="brand">
         <h1>
             <a class="brand-link" href="/" onclick={goHome}>

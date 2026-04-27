@@ -17,7 +17,7 @@ export const LANGUAGES = [
 ];
 
 export function renderMarkdown(src) {
-    const html = marked.parse(src, { breaks: true, gfm: true });
+    const html = marked.parse(src, { gfm: true });
     return DOMPurify.sanitize(html, { ADD_ATTR: ['target', 'rel'] });
 }
 

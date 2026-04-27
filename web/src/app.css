@@ -115,6 +115,9 @@ button.danger:hover { background: var(--danger-press); }
     display: flex;
     flex-direction: column;
 }
+.app-shell.wide {
+    max-width: 1520px;
+}
 
 header.brand {
     display: flex;
